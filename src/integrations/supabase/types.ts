@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      loan_applications: {
+        Row: {
+          address: string | null
+          age: number | null
+          approved_amount: number | null
+          birth_date: string | null
+          cns_number: string | null
+          cpf: string
+          cpf_status: string | null
+          created_at: string
+          email: string
+          full_name: string
+          gender: string | null
+          id: string
+          loan_type: string
+          mother_name: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          age?: number | null
+          approved_amount?: number | null
+          birth_date?: string | null
+          cns_number?: string | null
+          cpf: string
+          cpf_status?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          gender?: string | null
+          id?: string
+          loan_type: string
+          mother_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          age?: number | null
+          approved_amount?: number | null
+          birth_date?: string | null
+          cns_number?: string | null
+          cpf?: string
+          cpf_status?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          gender?: string | null
+          id?: string
+          loan_type?: string
+          mother_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
