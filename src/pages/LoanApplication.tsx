@@ -54,16 +54,11 @@ const LoanApplication = () => {
 
     setLoading(true);
     try {
-      // Create anonymous user session for tracking
-      const { data: { user }, error: authError } = await supabase.auth.signInAnonymously();
-      
-      if (authError) throw authError;
-
-      // Insert loan application
+      // Insert loan application directly without authentication
       const { error: insertError } = await supabase
         .from('loan_applications')
         .insert({
-          user_id: user?.id,
+          user_id: null, // No user authentication needed
           full_name: formData.fullName,
           cpf: formData.cpf,
           email: formData.email,
