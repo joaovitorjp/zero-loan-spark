@@ -131,18 +131,21 @@ const Index = () => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Admin Access Button */}
-      <div className="fixed bottom-6 right-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/admin-login')}
-          className="w-12 h-12 rounded-full bg-surface-elevated border border-border hover:bg-primary/10 shadow-soft"
-        >
-          <Lock className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        {/* Admin Access Section */}
+        <div className="mt-16 pt-8 border-t border-border">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-4">Área Administrativa</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin-login')}
+              className="bg-surface-elevated border border-border hover:bg-primary/10 shadow-soft"
+            >
+              <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Acesso Admin</span>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
