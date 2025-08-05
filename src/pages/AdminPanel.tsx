@@ -282,191 +282,195 @@ const AdminPanel = () => {
                             <span className="hidden sm:inline">Ver</span>
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-4">
-                          <DialogHeader>
-                            <DialogTitle className="text-lg sm:text-xl">Detalhes da Solicitação</DialogTitle>
-                            <DialogDescription className="text-sm">
-                              Analise e gerencie a solicitação de empréstimo
-                            </DialogDescription>
-                          </DialogHeader>
-                          
-                          {selectedApp && (
-                            <Tabs defaultValue="details" className="w-full">
-                              <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="details" className="text-sm">Detalhes</TabsTrigger>
-                                <TabsTrigger value="manage" className="text-sm">Gerenciar</TabsTrigger>
-                              </TabsList>
-                              
-                              <TabsContent value="details" className="space-y-4 mt-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  <div>
-                                    <Label className="text-sm font-medium">Nome Completo</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{selectedApp.full_name}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">CPF</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{selectedApp.cpf}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm text-muted-foreground mt-1 break-all">{selectedApp.email}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Tipo de Empréstimo</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{getLoanTypeLabel(selectedApp.loan_type)}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Status</Label>
-                                    <div className="mt-1">{getStatusBadge(selectedApp.status)}</div>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Data da Solicitação</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      {new Date(selectedApp.created_at).toLocaleString('pt-BR')}
-                                    </p>
-                                  </div>
-                                </div>
-                              </TabsContent>
-                              
-                              <TabsContent value="manage" className="space-y-4 mt-4">
-                                {selectedApp.status === 'pending' && (
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                      <div>
-                                        <Label htmlFor="approved_amount" className="text-sm">Valor Aprovado (R$)</Label>
-                                        <Input
-                                          id="approved_amount"
-                                          type="number"
-                                          value={adminData.approved_amount}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, approved_amount: e.target.value }))}
-                                          placeholder="50000.00"
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="age" className="text-sm">Idade</Label>
-                                        <Input
-                                          id="age"
-                                          type="number"
-                                          value={adminData.age}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, age: e.target.value }))}
-                                          placeholder="35"
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="birth_date" className="text-sm">Data de Nascimento</Label>
-                                        <Input
-                                          id="birth_date"
-                                          type="date"
-                                          value={adminData.birth_date}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, birth_date: e.target.value }))}
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="gender" className="text-sm">Sexo</Label>
-                                        <Input
-                                          id="gender"
-                                          value={adminData.gender}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, gender: e.target.value }))}
-                                          placeholder="Masculino/Feminino"
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="mother_name" className="text-sm">Nome da Mãe</Label>
-                                        <Input
-                                          id="mother_name"
-                                          value={adminData.mother_name}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, mother_name: e.target.value }))}
-                                          placeholder="Nome da mãe"
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="cpf_status" className="text-sm">Situação do CPF</Label>
-                                        <Input
-                                          id="cpf_status"
-                                          value={adminData.cpf_status}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, cpf_status: e.target.value }))}
-                                          placeholder="Regular/Irregular"
-                                          className="mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="cns_number" className="text-sm">Número CNS</Label>
-                                        <Input
-                                          id="cns_number"
-                                          value={adminData.cns_number}
-                                          onChange={(e) => setAdminData(prev => ({ ...prev, cns_number: e.target.value }))}
-                                          placeholder="000000000000000"
-                                          className="mt-1"
-                                        />
-                                      </div>
+                        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+                          <div className="p-4 sm:p-6">
+                            <DialogHeader>
+                              <DialogTitle className="text-lg sm:text-xl">Detalhes da Solicitação</DialogTitle>
+                              <DialogDescription className="text-sm">
+                                Analise e gerencie a solicitação de empréstimo
+                              </DialogDescription>
+                            </DialogHeader>
+                            
+                            {selectedApp && (
+                              <Tabs defaultValue="details" className="w-full mt-4">
+                                <TabsList className="grid w-full grid-cols-2">
+                                  <TabsTrigger value="details" className="text-sm">Detalhes</TabsTrigger>
+                                  <TabsTrigger value="manage" className="text-sm">Gerenciar</TabsTrigger>
+                                </TabsList>
+                                
+                                <TabsContent value="details" className="space-y-4 mt-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                      <Label className="text-sm font-medium">Nome Completo</Label>
+                                      <p className="text-sm text-muted-foreground mt-1">{selectedApp.full_name}</p>
                                     </div>
                                     <div>
-                                      <Label htmlFor="address" className="text-sm">Endereço Completo</Label>
-                                      <Textarea
-                                        id="address"
-                                        value={adminData.address}
-                                        onChange={(e) => setAdminData(prev => ({ ...prev, address: e.target.value }))}
-                                        placeholder="Rua, número, bairro, cidade, CEP"
-                                        rows={3}
-                                        className="mt-1"
-                                      />
+                                      <Label className="text-sm font-medium">CPF</Label>
+                                      <p className="text-sm text-muted-foreground mt-1">{selectedApp.cpf}</p>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
-                                      <Button 
-                                        onClick={handleApprove} 
-                                        variant="premium" 
-                                        className="flex-1"
-                                        disabled={loading || !adminData.approved_amount}
-                                      >
-                                        {loading ? (
-                                          <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            Aprovando...
-                                          </>
-                                        ) : (
-                                          'Aprovar Solicitação'
-                                        )}
-                                      </Button>
-                                      <Button 
-                                        onClick={() => handleReject(selectedApp.id)} 
-                                        variant="destructive" 
-                                        className="flex-1"
-                                        disabled={loading}
-                                      >
-                                        Rejeitar
-                                      </Button>
+                                    <div>
+                                      <Label className="text-sm font-medium">Email</Label>
+                                      <p className="text-sm text-muted-foreground mt-1 break-all">{selectedApp.email}</p>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium">Tipo de Empréstimo</Label>
+                                      <p className="text-sm text-muted-foreground mt-1">{getLoanTypeLabel(selectedApp.loan_type)}</p>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium">Status</Label>
+                                      <div className="mt-1">{getStatusBadge(selectedApp.status)}</div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium">Data da Solicitação</Label>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {new Date(selectedApp.created_at).toLocaleString('pt-BR')}
+                                      </p>
                                     </div>
                                   </div>
-                                )}
-                                {selectedApp.status === 'approved' && (
-                                  <div className="text-center py-8">
-                                    <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-foreground mb-2">Solicitação Aprovada</h3>
-                                    <p className="text-muted-foreground mb-4">
-                                      Valor aprovado: R$ {selectedApp.approved_amount?.toLocaleString('pt-BR')}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      O cliente foi notificado por email: {selectedApp.email}
-                                    </p>
-                                  </div>
-                                )}
-                                {selectedApp.status === 'rejected' && (
-                                  <div className="text-center py-8">
-                                    <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-foreground mb-2">Solicitação Rejeitada</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      O cliente foi notificado por email: {selectedApp.email}
-                                    </p>
-                                  </div>
-                                )}
-                              </TabsContent>
-                            </Tabs>
-                          )}
+                                </TabsContent>
+                                
+                                <TabsContent value="manage" className="space-y-4 mt-4">
+                                  {selectedApp.status === 'pending' && (
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                          <div>
+                                            <Label htmlFor="approved_amount" className="text-sm">Valor Aprovado (R$)</Label>
+                                            <Input
+                                              id="approved_amount"
+                                              type="number"
+                                              value={adminData.approved_amount}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, approved_amount: e.target.value }))}
+                                              placeholder="50000.00"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="age" className="text-sm">Idade</Label>
+                                            <Input
+                                              id="age"
+                                              type="number"
+                                              value={adminData.age}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, age: e.target.value }))}
+                                              placeholder="35"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="birth_date" className="text-sm">Data de Nascimento</Label>
+                                            <Input
+                                              id="birth_date"
+                                              type="date"
+                                              value={adminData.birth_date}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, birth_date: e.target.value }))}
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="gender" className="text-sm">Sexo</Label>
+                                            <Input
+                                              id="gender"
+                                              value={adminData.gender}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, gender: e.target.value }))}
+                                              placeholder="Masculino/Feminino"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="mother_name" className="text-sm">Nome da Mãe</Label>
+                                            <Input
+                                              id="mother_name"
+                                              value={adminData.mother_name}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, mother_name: e.target.value }))}
+                                              placeholder="Nome da mãe"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="cpf_status" className="text-sm">Situação do CPF</Label>
+                                            <Input
+                                              id="cpf_status"
+                                              value={adminData.cpf_status}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, cpf_status: e.target.value }))}
+                                              placeholder="Regular/Irregular"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="cns_number" className="text-sm">Número CNS</Label>
+                                            <Input
+                                              id="cns_number"
+                                              value={adminData.cns_number}
+                                              onChange={(e) => setAdminData(prev => ({ ...prev, cns_number: e.target.value }))}
+                                              placeholder="000000000000000"
+                                              className="mt-1"
+                                            />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label htmlFor="address" className="text-sm">Endereço Completo</Label>
+                                          <Textarea
+                                            id="address"
+                                            value={adminData.address}
+                                            onChange={(e) => setAdminData(prev => ({ ...prev, address: e.target.value }))}
+                                            placeholder="Rua, número, bairro, cidade, CEP"
+                                            rows={3}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 pt-4 border-t">
+                                        <Button 
+                                          onClick={handleApprove} 
+                                          variant="premium" 
+                                          className="flex-1"
+                                          disabled={loading || !adminData.approved_amount}
+                                        >
+                                          {loading ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                              Aprovando...
+                                            </>
+                                          ) : (
+                                            'Aprovar Solicitação'
+                                          )}
+                                        </Button>
+                                        <Button 
+                                          onClick={() => handleReject(selectedApp.id)} 
+                                          variant="destructive" 
+                                          className="flex-1"
+                                          disabled={loading}
+                                        >
+                                          Rejeitar
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {selectedApp.status === 'approved' && (
+                                    <div className="text-center py-8">
+                                      <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 text-success mx-auto mb-4" />
+                                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">Solicitação Aprovada</h3>
+                                      <p className="text-sm text-muted-foreground mb-4">
+                                        Valor aprovado: R$ {selectedApp.approved_amount?.toLocaleString('pt-BR')}
+                                      </p>
+                                      <p className="text-xs sm:text-sm text-muted-foreground break-all">
+                                        O cliente foi notificado por email: {selectedApp.email}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {selectedApp.status === 'rejected' && (
+                                    <div className="text-center py-8">
+                                      <XCircle className="h-12 w-12 sm:h-16 sm:w-16 text-destructive mx-auto mb-4" />
+                                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">Solicitação Rejeitada</h3>
+                                      <p className="text-xs sm:text-sm text-muted-foreground break-all">
+                                        O cliente foi notificado por email: {selectedApp.email}
+                                      </p>
+                                    </div>
+                                  )}
+                                </TabsContent>
+                              </Tabs>
+                            )}
+                          </div>
                         </DialogContent>
                       </Dialog>
                       {app.status === 'pending' && (
