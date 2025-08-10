@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ZROLogo from '@/components/ZROLogo';
@@ -28,6 +28,10 @@ const LoanApplication = () => {
     cpf: '',
     email: ''
   });
+
+  const [currentAppId, setCurrentAppId] = useState<string | null>(null);
+  const [appStatus, setAppStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
+  const [approvedAmount, setApprovedAmount] = useState<number | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -54,19 +58,24 @@ const LoanApplication = () => {
 
     setLoading(true);
     try {
-      // Insert loan application directly without authentication
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('loan_applications')
         .insert({
-          user_id: null, // No user authentication needed
+          user_id: null,
           full_name: formData.fullName,
           cpf: formData.cpf,
           email: formData.email,
           loan_type: loanType,
           status: 'pending'
-        });
+        })
+        .select('id, status, approved_amount')
+        .single();
 
       if (insertError) throw insertError;
+
+      setCurrentAppId(inserted.id);
+      setAppStatus(inserted.status as 'pending' | 'approved' | 'rejected');
+      setApprovedAmount((inserted as any).approved_amount ?? null);
 
       setStep(3);
       toast({ title: "Solicitação enviada com sucesso!" });
@@ -80,6 +89,51 @@ const LoanApplication = () => {
       setLoading(false);
     }
   };
+
+  // Listen for status changes in real-time with polling fallback
+  useEffect(() => {
+    if (!currentAppId) return;
+
+    const fetchStatus = async () => {
+      const { data } = await supabase
+        .from('loan_applications')
+        .select('status, approved_amount')
+        .eq('id', currentAppId)
+        .maybeSingle();
+
+      if (data) {
+        setAppStatus(data.status as 'pending' | 'approved' | 'rejected');
+        setApprovedAmount((data as any).approved_amount ?? null);
+      }
+    };
+
+    // Initial fetch
+    fetchStatus();
+
+    const channel = supabase
+      .channel(`loan-app-${currentAppId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'loan_applications',
+        filter: `id=eq.${currentAppId}`,
+      }, (payload) => {
+        const row: any = payload.new;
+        if (row) {
+          setAppStatus(row.status as 'pending' | 'approved' | 'rejected');
+          setApprovedAmount(row.approved_amount ?? null);
+        }
+      })
+      .subscribe();
+
+    // Fallback polling every 5s
+    const interval = setInterval(fetchStatus, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [currentAppId]);
 
   if (!loanType || !loanTypes[loanType]) {
     return (
@@ -136,7 +190,7 @@ const LoanApplication = () => {
             <div className="flex justify-center mt-2 text-sm text-muted-foreground">
               {step === 1 && "Dados Pessoais"}
               {step === 2 && "Confirmação"}
-              {step === 3 && "Análise"}
+              {step === 3 && (appStatus && appStatus !== 'pending' ? "Resultado" : "Análise")}
             </div>
           </div>
 
@@ -149,7 +203,7 @@ const LoanApplication = () => {
               <CardDescription>
                 {step === 1 && "Preencha seus dados para análise de crédito"}
                 {step === 2 && "Confirme os dados inseridos"}
-                {step === 3 && "Sua solicitação está sendo analisada"}
+                {step === 3 && (appStatus && appStatus !== 'pending' ? "Resultado da análise" : "Sua solicitação está sendo analisada")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -235,23 +289,69 @@ const LoanApplication = () => {
 
               {step === 3 && (
                 <div className="text-center space-y-6">
-                  <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto animate-pulse">
-                    <Loader2 className="h-8 w-8 text-primary-foreground animate-spin" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">
-                      Análise em Andamento
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Aguarde enquanto um de nossos consultores analisa sua proposta. 
-                      Em breve você receberá o resultado da análise.
-                    </p>
-                  </div>
-                  <div className="bg-surface p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      Mantenha esta página aberta para receber o resultado em tempo real.
-                    </p>
-                  </div>
+                  {appStatus === 'approved' ? (
+                    <>
+                      <CheckCircle className="h-16 w-16 text-success mx-auto" />
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">
+                          Empréstimo aprovado!
+                        </h3>
+                        {approvedAmount !== null && (
+                          <p className="text-muted-foreground">
+                            Valor aprovado: <span className="font-semibold text-success">R$ {approvedAmount.toLocaleString('pt-BR')}</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="bg-surface p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          Um consultor entrará em contato no e-mail {formData.email} com os próximos passos.
+                        </p>
+                      </div>
+                      <Button onClick={() => navigate('/')} variant="premium" className="w-full sm:w-auto">
+                        Concluir
+                      </Button>
+                    </>
+                  ) : appStatus === 'rejected' ? (
+                    <>
+                      <XCircle className="h-16 w-16 text-destructive mx-auto" />
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">
+                          Solicitação não aprovada
+                        </h3>
+                        <p className="text-muted-foreground">
+                          Infelizmente sua solicitação não foi aprovada no momento.
+                        </p>
+                      </div>
+                      <div className="bg-surface p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          Você pode revisar seus dados e tentar novamente no futuro.
+                        </p>
+                      </div>
+                      <Button onClick={() => navigate('/')} variant="outline" className="w-full sm:w-auto">
+                        Voltar ao início
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto animate-pulse">
+                        <Loader2 className="h-8 w-8 text-primary-foreground animate-spin" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">
+                          Análise em Andamento
+                        </h3>
+                        <p className="text-muted-foreground">
+                          Aguarde enquanto um de nossos consultores analisa sua proposta. 
+                          Em breve você receberá o resultado da análise.
+                        </p>
+                      </div>
+                      <div className="bg-surface p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          Mantenha esta página aberta para receber o resultado em tempo real.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
