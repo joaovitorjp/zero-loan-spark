@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Eye, CheckCircle, XCircle, Users, Clock, DollarSign, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,6 +151,28 @@ const AdminPanel = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao rejeitar solicitação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (applicationId: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('loan_applications')
+        .delete()
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast({ title: "Solicitação excluída" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir solicitação",
         description: error.message,
         variant: "destructive"
       });
@@ -473,7 +496,7 @@ const AdminPanel = () => {
                           </div>
                         </DialogContent>
                       </Dialog>
-                      {app.status === 'pending' && (
+                      {app.status === 'pending' ? (
                         <Button 
                           onClick={() => handleReject(app.id)} 
                           variant="destructive" 
@@ -484,6 +507,31 @@ const AdminPanel = () => {
                           <XCircle className="h-4 w-4 sm:mr-1" />
                           <span className="hidden sm:inline">Rejeitar</span>
                         </Button>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={loading} className="text-xs">
+                              Excluir
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir solicitação</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir esta solicitação concluída? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(app.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </div>

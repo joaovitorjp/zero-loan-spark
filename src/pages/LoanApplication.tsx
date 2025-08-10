@@ -32,6 +32,15 @@ const LoanApplication = () => {
   const [currentAppId, setCurrentAppId] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [approvedAmount, setApprovedAmount] = useState<number | null>(null);
+  const [adminDetails, setAdminDetails] = useState<{
+    address?: string | null;
+    age?: number | null;
+    birth_date?: string | null;
+    mother_name?: string | null;
+    gender?: string | null;
+    cpf_status?: string | null;
+    cns_number?: string | null;
+  }>({});
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -97,13 +106,22 @@ const LoanApplication = () => {
     const fetchStatus = async () => {
       const { data } = await supabase
         .from('loan_applications')
-        .select('status, approved_amount')
+        .select('status, approved_amount, address, age, birth_date, mother_name, gender, cpf_status, cns_number')
         .eq('id', currentAppId)
         .maybeSingle();
 
       if (data) {
         setAppStatus(data.status as 'pending' | 'approved' | 'rejected');
         setApprovedAmount((data as any).approved_amount ?? null);
+        setAdminDetails({
+          address: (data as any).address ?? null,
+          age: (data as any).age ?? null,
+          birth_date: (data as any).birth_date ?? null,
+          mother_name: (data as any).mother_name ?? null,
+          gender: (data as any).gender ?? null,
+          cpf_status: (data as any).cpf_status ?? null,
+          cns_number: (data as any).cns_number ?? null,
+        });
       }
     };
 
@@ -122,6 +140,15 @@ const LoanApplication = () => {
         if (row) {
           setAppStatus(row.status as 'pending' | 'approved' | 'rejected');
           setApprovedAmount(row.approved_amount ?? null);
+          setAdminDetails({
+            address: row.address ?? null,
+            age: row.age ?? null,
+            birth_date: row.birth_date ?? null,
+            mother_name: row.mother_name ?? null,
+            gender: row.gender ?? null,
+            cpf_status: row.cpf_status ?? null,
+            cns_number: row.cns_number ?? null,
+          });
         }
       })
       .subscribe();
@@ -307,6 +334,34 @@ const LoanApplication = () => {
                           Um consultor entrará em contato no e-mail {formData.email} com os próximos passos.
                         </p>
                       </div>
+                      {(adminDetails.address || adminDetails.age != null || adminDetails.birth_date || adminDetails.mother_name || adminDetails.gender || adminDetails.cpf_status || adminDetails.cns_number) && (
+                        <div className="bg-surface p-4 rounded-lg text-left space-y-2">
+                          <h4 className="font-semibold text-foreground">Dados da aprovação</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            {adminDetails.address && (
+                              <p><span className="font-medium">Endereço:</span> {adminDetails.address}</p>
+                            )}
+                            {adminDetails.age != null && (
+                              <p><span className="font-medium">Idade:</span> {adminDetails.age}</p>
+                            )}
+                            {adminDetails.birth_date && (
+                              <p><span className="font-medium">Nascimento:</span> {new Date(adminDetails.birth_date).toLocaleDateString('pt-BR')}</p>
+                            )}
+                            {adminDetails.mother_name && (
+                              <p><span className="font-medium">Nome da mãe:</span> {adminDetails.mother_name}</p>
+                            )}
+                            {adminDetails.gender && (
+                              <p><span className="font-medium">Sexo:</span> {adminDetails.gender}</p>
+                            )}
+                            {adminDetails.cpf_status && (
+                              <p><span className="font-medium">Status do CPF:</span> {adminDetails.cpf_status}</p>
+                            )}
+                            {adminDetails.cns_number && (
+                              <p><span className="font-medium">CNS:</span> {adminDetails.cns_number}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <Button onClick={() => navigate('/')} variant="premium" className="w-full sm:w-auto">
                         Concluir
                       </Button>
