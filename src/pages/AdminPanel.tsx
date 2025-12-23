@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, CheckCircle, XCircle, Users, Clock, DollarSign, Loader2 } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, Users, Clock, DollarSign, Loader2, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ZROLogo from '@/components/ZROLogo';
+import { User, Session } from '@supabase/supabase-js';
 
 interface LoanApplication {
   id: string;
@@ -32,7 +34,12 @@ interface LoanApplication {
 }
 
 const AdminPanel = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [applications, setApplications] = useState<LoanApplication[]>([]);
   const [selectedApp, setSelectedApp] = useState<LoanApplication | null>(null);
   const [adminData, setAdminData] = useState({
@@ -47,8 +54,80 @@ const AdminPanel = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  // Auth state listener
   useEffect(() => {
-    fetchApplications();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session?.user) {
+        setAuthLoading(false);
+        navigate('/auth');
+      } else {
+        // Check admin role after auth state change
+        setTimeout(() => {
+          checkAdminRole(session.user.id);
+        }, 0);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session?.user) {
+        setAuthLoading(false);
+        navigate('/auth');
+      } else {
+        checkAdminRole(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (data) {
+        setIsAdmin(true);
+        fetchApplications();
+      } else {
+        // First user becomes admin automatically (for initial setup)
+        const { data: allRoles } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+        
+        // If no admin exists, make this user admin
+        const { count } = await supabase
+          .from('user_roles')
+          .select('*', { count: 'exact', head: true });
+        
+        if (count === 0) {
+          // Insert first admin using service role via edge function would be ideal,
+          // but for now we'll allow authenticated insert for first admin
+          await supabase.from('user_roles').insert({ user_id: userId, role: 'admin' });
+          setIsAdmin(true);
+          fetchApplications();
+        } else {
+          toast({ title: "Acesso negado", description: "Você não tem permissão de administrador", variant: "destructive" });
+          setIsAdmin(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
     
     // Subscribe to real-time updates
     const channel = supabase
@@ -69,7 +148,7 @@ const AdminPanel = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isAdmin]);
 
   const fetchApplications = async () => {
     try {
@@ -210,16 +289,48 @@ const AdminPanel = () => {
     rejected: applications.filter(app => app.status === 'rejected').length
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
+            <p className="text-muted-foreground mb-4">Você não tem permissão para acessar esta área.</p>
+            <Button onClick={handleLogout} variant="outline">Voltar</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="text-center">
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-center flex-1">
             <ZROLogo className="h-8 sm:h-10 mb-2 mx-auto" />
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Painel Administrativo</h1>
             <p className="text-sm sm:text-base text-muted-foreground">Gerenciamento de Solicitações de Empréstimo</p>
           </div>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
 
         {/* Stats */}

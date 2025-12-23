@@ -30,6 +30,7 @@ const LoanApplication = () => {
   });
 
   const [currentAppId, setCurrentAppId] = useState<string | null>(null);
+  const [clientToken, setClientToken] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [approvedAmount, setApprovedAmount] = useState<number | null>(null);
   const [adminDetails, setAdminDetails] = useState<{
@@ -70,19 +71,19 @@ const LoanApplication = () => {
       const { data: inserted, error: insertError } = await supabase
         .from('loan_applications')
         .insert({
-          user_id: null,
           full_name: formData.fullName,
           cpf: formData.cpf,
           email: formData.email,
           loan_type: loanType,
           status: 'pending'
         })
-        .select('id, status, approved_amount')
+        .select('id, client_token, status, approved_amount')
         .single();
 
       if (insertError) throw insertError;
 
       setCurrentAppId(inserted.id);
+      setClientToken((inserted as any).client_token);
       setAppStatus(inserted.status as 'pending' | 'approved' | 'rejected');
       setApprovedAmount((inserted as any).approved_amount ?? null);
 
@@ -99,45 +100,23 @@ const LoanApplication = () => {
     }
   };
 
-  // Listen for status changes in real-time with polling fallback
+  // Listen for status changes via secure polling (using Edge Function)
   useEffect(() => {
-    if (!currentAppId) return;
+    if (!currentAppId || !clientToken) return;
 
     const fetchStatus = async () => {
-      const { data } = await supabase
-        .from('loan_applications')
-        .select('status, approved_amount, address, age, birth_date, mother_name, gender, cpf_status, cns_number')
-        .eq('id', currentAppId)
-        .maybeSingle();
-
-      if (data) {
-        setAppStatus(data.status as 'pending' | 'approved' | 'rejected');
-        setApprovedAmount((data as any).approved_amount ?? null);
-        setAdminDetails({
-          address: (data as any).address ?? null,
-          age: (data as any).age ?? null,
-          birth_date: (data as any).birth_date ?? null,
-          mother_name: (data as any).mother_name ?? null,
-          gender: (data as any).gender ?? null,
-          cpf_status: (data as any).cpf_status ?? null,
-          cns_number: (data as any).cns_number ?? null,
+      try {
+        const { data, error } = await supabase.functions.invoke('check-application-status', {
+          body: { application_id: currentAppId, client_token: clientToken }
         });
-      }
-    };
 
-    // Initial fetch
-    fetchStatus();
+        if (error) {
+          console.error('Error fetching status:', error);
+          return;
+        }
 
-    const channel = supabase
-      .channel(`loan-app-${currentAppId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'loan_applications',
-        filter: `id=eq.${currentAppId}`,
-      }, (payload) => {
-        const row: any = payload.new;
-        if (row) {
+        if (data?.data) {
+          const row = data.data;
           setAppStatus(row.status as 'pending' | 'approved' | 'rejected');
           setApprovedAmount(row.approved_amount ?? null);
           setAdminDetails({
@@ -150,17 +129,21 @@ const LoanApplication = () => {
             cns_number: row.cns_number ?? null,
           });
         }
-      })
-      .subscribe();
+      } catch (err) {
+        console.error('Error in status fetch:', err);
+      }
+    };
 
-    // Fallback polling every 5s
+    // Initial fetch
+    fetchStatus();
+
+    // Poll every 5s for status updates
     const interval = setInterval(fetchStatus, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [currentAppId]);
+  }, [currentAppId, clientToken]);
 
   if (!loanType || !loanTypes[loanType]) {
     return (

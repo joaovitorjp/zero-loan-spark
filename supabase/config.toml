@@ -1,1 +1,4 @@
 project_id = "nmxyqlwkflhzepbplbss"
+
+[functions.check-application-status]
+verify_jwt = false
